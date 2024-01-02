@@ -6,9 +6,13 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="realtime_common" />
-        <module name="realtime_dwd" />
+        <module name="realtime-dwd-traffic-baselog" />
         <module name="realtime_dws" />
+        <module name="realtime-dwd-trade-cart-add" />
+        <module name="realtime-dwd-trade-cancel-order" />
+        <module name="realtime_common" />
+        <module name="realtime-dwd-trade-order-detail" />
+        <module name="realtime-dwd-interaction-comment-info" />
         <module name="realtime_dim" />
       </profile>
     </annotationProcessing>

@@ -7,6 +7,16 @@
     <file url="file://$PROJECT_DIR$/realtime_dim/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/realtime_diw/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/realtime_diw/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/realtime_dwd/realtime-dwd-interaction-comment-info/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/realtime_dwd/realtime-dwd-interaction-comment-info/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/realtime_dwd/realtime-dwd-trade-cancel-order/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/realtime_dwd/realtime-dwd-trade-cancel-order/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/realtime_dwd/realtime-dwd-trade-cart-add/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/realtime_dwd/realtime-dwd-trade-cart-add/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/realtime_dwd/realtime-dwd-trade-order-detail/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/realtime_dwd/realtime-dwd-trade-order-detail/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/realtime_dwd/realtime-dwd-traffic-baselog/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/realtime_dwd/realtime-dwd-traffic-baselog/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/realtime_dwd/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/realtime_dwd/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/realtime_dws/src/main/java" charset="UTF-8" />

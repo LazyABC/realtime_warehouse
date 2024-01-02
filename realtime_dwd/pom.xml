@@ -9,12 +9,21 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <packaging>pom</packaging>
+
     <artifactId>realtime_dwd</artifactId>
+
+    <modules>
+        <module>realtime-dwd-traffic-baselog</module>
+        <module>realtime-dwd-interaction-comment-info</module>
+        <module>realtime-dwd-trade-cart-add</module>
+        <module>realtime-dwd-trade-order-detail</module>
+        <module>realtime-dwd-trade-cancel-order</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>

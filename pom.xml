@@ -160,6 +160,11 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-hbase-2.2</artifactId>
+            <version>${flink.version}</version>
+        </dependency>
 
     </dependencies>
 

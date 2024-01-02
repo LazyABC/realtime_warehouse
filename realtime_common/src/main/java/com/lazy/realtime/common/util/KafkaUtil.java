@@ -1,9 +1,13 @@
 package com.lazy.realtime.common.util;
 
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.connector.base.DeliveryGuarantee;
+import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
+import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
 
 /**
  * @Name: Lazy
@@ -28,4 +32,26 @@ public class KafkaUtil {
                 .setProperty(ConsumerConfig.ISOLATION_LEVEL_CONFIG,"read_committed")
                 .build();
     }
+
+    public static KafkaSink<String> getKafkaSink(String topic){
+        return KafkaSink
+                .<String>builder()
+                .setBootstrapServers(PropertyUtil.getStringValue("KAFKA_BROKERS"))
+                .setRecordSerializer(
+                        KafkaRecordSerializationSchema
+                                .builder()
+                                .setValueSerializationSchema(new SimpleStringSchema())
+                                .setTopic(topic)
+                                .build()
+                )
+                //必须设置为EOS
+                .setDeliveryGuarantee(DeliveryGuarantee.EXACTLY_ONCE)
+                //开启了ck，基于2PC提交的事务写出时，可以给每个事务添加一个前缀
+                .setTransactionalIdPrefix("lazy-"+ topic)
+                .setProperty(ProducerConfig.BATCH_SIZE_CONFIG, "1000")
+                .setProperty(ProducerConfig.LINGER_MS_CONFIG, "1000")
+                .setProperty(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG,10 * 60000 +"")
+                .build();
+    }
+
 }

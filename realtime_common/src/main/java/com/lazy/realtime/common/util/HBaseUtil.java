@@ -139,6 +139,9 @@ public class HBaseUtil {
     }
 
 
+    public static Table getTable(String ns,String tn) throws IOException {
+        return connection.getTable(getTableName(ns,tn));
+    }
     /*
         封装put。
              put 表名 rowkey  列族名:列名 列值
