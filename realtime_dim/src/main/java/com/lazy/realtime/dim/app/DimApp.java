@@ -2,11 +2,13 @@ package com.lazy.realtime.dim.app;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.lazy.realtime.common.base.BaseDataStreamApp;
 import com.lazy.realtime.common.util.HBaseUtil;
 import com.lazy.realtime.common.util.JDBCUtil;
 import com.lazy.realtime.common.util.PropertyUtil;
+import com.lazy.realtime.dim.function.HBaseSinkFunction;
 import com.lazy.realtime.dim.pojo.TableProcess;
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;
@@ -81,7 +83,53 @@ public class DimApp extends BaseDataStreamApp {
         //4.connect 维度配置 和 维度数据
         SingleOutputStreamOperator<Tuple2<JSONObject, TableProcess>> connectedDs = connect(etlDS, cdcDs2);
 
-        connectedDs.print("connect");
+        //5.准备写出到HBase。只保留需要写出的字段
+        SingleOutputStreamOperator<Tuple2<JSONObject, TableProcess>> resultDs = dropFileds(connectedDs);
+
+        /*
+            DataStreamAPI中并没有提供HBase的连接器。但是FlinkSql中提供了HBase的连接器。
+                选择使用FlinkSql，需要：
+                        1.把当前的流，分流为16张维度表的流
+                        2.创建16张对应的写出到hbase的sink表。
+                        3.把16个流分钟转换为16张source表，之后执行 insert into sink表 select * from source表
+         */
+
+        //6.执行写出
+        resultDs.addSink(new HBaseSinkFunction());
+        resultDs.print();
+
+    }
+
+    private SingleOutputStreamOperator<Tuple2<JSONObject, TableProcess>> dropFileds(SingleOutputStreamOperator<Tuple2<JSONObject, TableProcess>> connectedDs) {
+
+        return connectedDs
+                .map(new MapFunction<Tuple2<JSONObject, TableProcess>, Tuple2<JSONObject, TableProcess>>()
+                {
+                    @Override
+                    public Tuple2<JSONObject, TableProcess> map(Tuple2<JSONObject, TableProcess> value) throws Exception {
+                        //取出要过滤的业务数据
+                        JSONObject originalData = value.f0;
+                        //获取到要保留的字段
+                        TableProcess config = value.f1;
+                        Set<String> fileds = Arrays.stream(config.getSinkColumns().concat(",").concat("op_type").split(",")).collect(Collectors.toSet());
+                        //使用要保留的字段，对原始的业务数据，进行过滤，只留下要保留的字段
+                   /* JSONObject result = new JSONObject();
+                    Set<Map.Entry<String, Object>> entries = originalData.entrySet();
+                    for (Map.Entry<String, Object> entry : entries) {
+                        if (fileds.contains(entry.getKey())){
+                            result.put(entry.getKey(),entry.getValue());
+                        }
+                    }*/
+                    /*
+                        filterKeys(Map<K, V> unfiltered, Predicate<? super K> keyPredicate):
+                            Map<K, V> unfiltered: 要过滤的Map
+                            Predicate<? super K> 一个key的验证条件。把验证条件返回true的key留下来
+                     */
+                        value.f0 = new JSONObject(Maps.filterKeys(originalData, fileds::contains));
+                        return value;
+                    }
+                });
+
     }
 
     private SingleOutputStreamOperator<Tuple2<JSONObject, TableProcess>> connect(SingleOutputStreamOperator<String> dimDs, SingleOutputStreamOperator<TableProcess> configDs) {
@@ -145,10 +193,11 @@ public class DimApp extends BaseDataStreamApp {
 
                         if (v == null){
                             v = configMap.get(table);
-                            log.warn(v+" 是维度的配置，但是无法从广播状态中获取....");
+                            //log.warn(v+" 无法从广播状态中获取....");
                         }
 
-                        String type = jsonObject.getString("type");
+                        //不管是bootstrap-insert还是insert，统一都设置为insert。不做这个操作也可以
+                        String type = jsonObject.getString("type").replace("bootstrap-","");
                         //记录当前这条业务数据的操作方式
                         JSONObject data = jsonObject.getJSONObject("data");
                         data.put("op_type",type);
@@ -177,8 +226,11 @@ public class DimApp extends BaseDataStreamApp {
                         if ("d".equals(value.getOp())) {
                             //删除配置
                             broadcastState.remove(value.getSourceTable());
+                            //保证初始的map和最新的维度配置是同步的
+                            configMap.remove(value.getSourceTable());
                         } else {
                             broadcastState.put(value.getSourceTable(), value);
+                            configMap.put(value.getSourceTable(), value);
                         }
 
                     }
@@ -249,6 +301,7 @@ public class DimApp extends BaseDataStreamApp {
         //维度表配置的变更要遵守顺序。这里全程从读取到处理到广播到下游都使用一个并行度
         return env
                 .fromSource(mySqlSource, WatermarkStrategy.noWatermarks(), "config").setParallelism(1)
+                .filter(str -> str.contains("DIM")).setParallelism(1)
                 .map(new MapFunction<String, TableProcess>()
                 {
                     @Override
@@ -288,7 +341,7 @@ public class DimApp extends BaseDataStreamApp {
     private SingleOutputStreamOperator<String> etl(DataStreamSource<String> ds) {
 
         //定义type
-        HashSet<String> opSets = Sets.newHashSet("insert", "update", "delete");
+        HashSet<String> opSets = Sets.newHashSet("insert", "update", "delete","bootstrap-insert");
 
         return ds
                 .filter(new FilterFunction<String>()

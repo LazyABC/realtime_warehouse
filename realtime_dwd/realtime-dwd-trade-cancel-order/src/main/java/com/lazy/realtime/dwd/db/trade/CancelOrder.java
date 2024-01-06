@@ -4,6 +4,8 @@ import com.lazy.realtime.common.base.BaseSqlApp;
 import com.lazy.realtime.common.util.SqlUtil;
 import org.apache.flink.table.api.TableEnvironment;
 
+import java.time.Duration;
+
 import static com.lazy.realtime.common.constant.GmallConstant.TOPIC_DWD_TRADE_CANCEL_DETAIL;
 import static com.lazy.realtime.common.constant.GmallConstant.TOPIC_DWD_TRADE_ORDER_DETAIL;
 
@@ -36,9 +38,14 @@ public class CancelOrder extends BaseSqlApp {
 
     @Override
     protected void handle(TableEnvironment env) {
+
+        //1.订单从下单到取消，在业务过程中允许的最大的时间间隔。例如在业务中要求，订单从下单后，必须在30min之内支付，否则会被系统自动取消。
+        //订单从下单后，在没有被系统自动取消时，可以手动取消。
+        env.getConfig().setIdleStateRetention(Duration.ofMinutes(35));
+
         //1.读ods层的原始数据(ods_db),名字叫ods_db
         createOdsDb(env);
-        //2.获取取消的订单order_info
+        //2. 获取取消的订单order_info
         String orderInfoSql = " select " +
                 "  data['id'] id, " +
                 "  data['operate_time'] cancel_time ," +
@@ -69,10 +76,11 @@ public class CancelOrder extends BaseSqlApp {
                 "   coupon_use_id STRING ," +
                 "  activity_id STRING , " +
                 "  `offset` BIGINT METADATA VIRTUAL  ," +
-                "  activity_rule_id STRING  " + SqlUtil.getKafkaSourceSql(TOPIC_DWD_TRADE_ORDER_DETAIL,"Lazy");
+                "  activity_rule_id STRING  " + SqlUtil.getKafkaSourceSql(TOPIC_DWD_TRADE_ORDER_DETAIL,"230724");
 
         env.executeSql(dwdOrderDetailSql);
 
+        //----------------------------------
         //查询
         String dwdQuerySql = " select" +
                 "  * ," +
@@ -80,6 +88,8 @@ public class CancelOrder extends BaseSqlApp {
                 " from " + TOPIC_DWD_TRADE_ORDER_DETAIL ;
 
         env.createTemporaryView("od",env.sqlQuery(dwdQuerySql));
+        //-------------------------------------
+
 
         //关联
         String joinSql = " select " +
@@ -129,6 +139,8 @@ public class CancelOrder extends BaseSqlApp {
 
         env.executeSql(sinkSql);
         env.executeSql("insert into "+ TOPIC_DWD_TRADE_CANCEL_DETAIL + joinSql);
+
+
 
     }
 }

@@ -1,6 +1,9 @@
 package com.lazy.realtime.common.util;
 
+import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
@@ -8,6 +11,9 @@ import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @Name: Lazy
@@ -23,7 +29,36 @@ public class KafkaUtil {
                 //.setStartingOffsets(OffsetsInitializer.committedOffsets(OffsetResetStrategy.EARLIEST))
                 //为了方便调试
                 .setStartingOffsets(OffsetsInitializer.earliest())
-                .setValueOnlyDeserializer(new SimpleStringSchema())
+
+                //默认的SimpleStringSchema无法处理value为null的情况
+                .setValueOnlyDeserializer(new DeserializationSchema<String>()
+                {
+                    //实现反序列化
+                    @Override
+                    public String deserialize(byte[] message) throws IOException {
+                        //原因在于 对于一个 byte[] message，调用一个反序列化的方法，报错空指针
+                        // message.xxxx()
+                        if (message != null){
+                            return new String(message, StandardCharsets.UTF_8);
+                        }else {
+                            //kafkasource会自动忽略这条数据,不会把数据发送到下游
+                            return null;
+                        }
+                    }
+
+                    //对流进行说明，无界流，返回false
+                    @Override
+                    public boolean isEndOfStream(String nextElement) {
+                        return false;
+                    }
+
+                    //返回数据类型的类型提示
+                    @Override
+                    public TypeInformation<String> getProducedType() {
+                        return Types.STRING;
+                    }
+                })
+
                 .setProperty(ConsumerConfig.GROUP_ID_CONFIG,groupId)
                 //开启ck，默认都会把offset提交到kafka一份
                 //.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,"true")

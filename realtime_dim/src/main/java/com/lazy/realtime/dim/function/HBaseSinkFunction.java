@@ -71,6 +71,15 @@ public class HBaseSinkFunction extends RichSinkFunction<Tuple2<JSONObject, Table
         String op_type = data.getString("op_type");
         //获取要写出的Table对象
         Table t = tableMap.get(table);
+
+        //t可能会由于，当前处理的维度表是Job启动后，又增加的配置信息，而为null
+        if(t == null){
+            //手动创建
+            t  = HBaseUtil.getTable(PropertyUtil.getStringValue("HBASE_NAMESPACE"), config.getSinkTable());
+            tableMap.put(table,t);
+        }
+
+
         log.warn("取出:"+ t.toString());
         //执行写出
         if ("delete".equals(op_type)){

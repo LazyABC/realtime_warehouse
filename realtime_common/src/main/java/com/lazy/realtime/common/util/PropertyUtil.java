@@ -17,6 +17,10 @@ public class PropertyUtil {
         return config.getString(name);
     }
 
+    public static Boolean getBooleanValue(String name){
+        return Boolean.valueOf(config.getString(name));
+    }
+
     public static Integer getIntValue(String name){
         return Integer.parseInt(config.getString(name));
     }

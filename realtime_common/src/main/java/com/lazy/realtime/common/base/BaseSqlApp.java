@@ -22,11 +22,17 @@ public abstract class BaseSqlApp {
     public void start(String jobName,int port,int parallelism){
 
         Configuration conf = new Configuration();
+        //设置端口号
         conf.setInteger("rest.port", port);
         //设置job的名字
         conf.setString("pipeline.name",jobName);
+
+        //相当于代码中 WaterMarkStradegy设置 idleness()
+        conf.setString("table.exec.source.idle-timeout","10s");
+
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment(conf);
 
+        //设置并行度
         env.setParallelism(parallelism);
         //限制最大重启次数，方便调试
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3,2000));
@@ -75,7 +81,9 @@ public abstract class BaseSqlApp {
                 "  `ts` BIGINT ," +
                 "  `data` MAP<STRING,STRING> ," +
                 "  `old` MAP<STRING,STRING> ," +
-                "  `pt` as PROCTIME() " +
+                "  `pt` as PROCTIME() ," +
+                "   et as TO_TIMESTAMP_LTZ(ts,0) ," +
+                "   WATERMARK FOR et as et - INTERVAL '0.001' SECOND " +
                 SqlUtil.getKafkaSourceSql(PropertyUtil.getStringValue("TOPIC_ODS_DB"),"ods_db")
                 ;
 
