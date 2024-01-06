@@ -31,7 +31,7 @@ public class HBaseUtilTest
     @Test
     public void createNamespace() throws IOException {
         Admin admin = HBaseUtil.getAdmin();
-        HBaseUtil.createNamespace(admin,"test");
+        HBaseUtil.createNamespace(admin,"test1");
 
     }
 

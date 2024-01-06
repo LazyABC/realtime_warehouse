@@ -1,11 +1,7 @@
 package com.lazy.realtime.common.constant;
 
-/**
- * @Name: Lazy
- * @Date: 2023/12/29 15:24:55
- * @Details:
- */
-public interface GmallConstant {
+public interface GmallConstant
+{
     //接口中只能编写常量，变量的修饰符 是  static final
     //日志中的标记
     String START = "start";
@@ -16,7 +12,6 @@ public interface GmallConstant {
     //新老客户的标记
     String ISNEWOLD = "0";
     String ISNEWNEW = "1";
-
     //dwd日志相关
     String TOPIC_DWD_TRAFFIC_START = "dwd_traffic_start";
     String TOPIC_DWD_TRAFFIC_ERR = "dwd_traffic_err";

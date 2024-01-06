@@ -3,29 +3,26 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>realtime_warehouse</artifactId>
+        <artifactId>realtime_dws</artifactId>
         <groupId>com.lazy</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>realtime_dws</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>realtime-dws-traffic-source-keyword-page-view-window</module>
-    </modules>
+    <artifactId>realtime-dws-traffic-source-keyword-page-view-window</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+
 
     <dependencies>
         <dependency>
-            <artifactId>realtime_common</artifactId>
-            <groupId>com.lazy</groupId>
-            <version>1.0-SNAPSHOT</version>
+            <groupId>com.janeluo</groupId>
+            <artifactId>ikanalyzer</artifactId>
         </dependency>
     </dependencies>
+
 </project>

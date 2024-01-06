@@ -19,6 +19,10 @@
         <module>realtime-dwd-trade-cart-add</module>
         <module>realtime-dwd-trade-order-detail</module>
         <module>realtime-dwd-trade-cancel-order</module>
+        <module>realtime-dwd-trade-paysuc-detail</module>
+        <module>realtime-dwd-trade-order-refund</module>
+        <module>realtime-dwd-trade-refund-paysuc</module>
+        <module>realtime-dwd-other</module>
     </modules>
 
     <properties>

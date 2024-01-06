@@ -75,7 +75,9 @@ public abstract class BaseSqlApp {
                 "  `ts` BIGINT ," +
                 "  `data` MAP<STRING,STRING> ," +
                 "  `old` MAP<STRING,STRING> ," +
-                "  `pt` as PROCTIME() " +
+                "  `pt` as PROCTIME() ," +
+                "   et as TO_TIMESTAMP_LTZ(ts,0) ," +
+                "   WATERMARK FOR et as et - INTERVAL '0.001' SECOND " +
                 SqlUtil.getKafkaSourceSql(PropertyUtil.getStringValue("TOPIC_ODS_DB"),"ods_db")
                 ;
 

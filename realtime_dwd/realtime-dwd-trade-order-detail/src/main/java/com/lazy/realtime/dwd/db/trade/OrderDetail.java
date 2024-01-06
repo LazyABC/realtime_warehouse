@@ -4,6 +4,8 @@ import com.lazy.realtime.common.base.BaseSqlApp;
 import com.lazy.realtime.common.util.SqlUtil;
 import org.apache.flink.table.api.TableEnvironment;
 
+import java.time.Duration;
+
 import static com.lazy.realtime.common.constant.GmallConstant.TOPIC_DWD_TRADE_ORDER_DETAIL;
 
 /**
@@ -35,7 +37,12 @@ public class OrderDetail extends BaseSqlApp {
     }
     @Override
     protected void handle(TableEnvironment env) {
-        //1.读ods层的原始数据(ods_db),名字ods_db
+
+        //所关联的数据，都是下单业务产生的数据。理论上，应该是同时产生，被采集，被处理
+        //进行压力测试，测试同时产生的业务数据，在集群极端繁忙的情况下，最多延迟多久，可以到达flink程序。
+        env.getConfig().setIdleStateRetention(Duration.ofSeconds(10));
+
+        //1.读ods层的原始数据(ods_db),名字叫ods_db
         createOdsDb(env);
         //2.创建4张和下单相关的业务表
         String orderInfoSql = " select " +
@@ -130,5 +137,6 @@ public class OrderDetail extends BaseSqlApp {
 
         //写出
         env.executeSql("insert into "+ TOPIC_DWD_TRADE_ORDER_DETAIL + joinSql);
+
     }
 }

@@ -7,13 +7,17 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="realtime-dwd-traffic-baselog" />
-        <module name="realtime_dws" />
+        <module name="realtime-dwd-trade-paysuc-detail" />
+        <module name="realtime-dwd-trade-order-refund" />
+        <module name="realtime-dwd-other" />
         <module name="realtime-dwd-trade-cart-add" />
         <module name="realtime-dwd-trade-cancel-order" />
         <module name="realtime_common" />
+        <module name="realtime-dws-traffic-source-keyword-page-view-window" />
         <module name="realtime-dwd-trade-order-detail" />
         <module name="realtime-dwd-interaction-comment-info" />
         <module name="realtime_dim" />
+        <module name="realtime-dwd-trade-refund-paysuc" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>

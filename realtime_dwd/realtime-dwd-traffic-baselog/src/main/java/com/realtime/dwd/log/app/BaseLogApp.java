@@ -36,7 +36,7 @@ public class BaseLogApp extends BaseDataStreamApp {
         new BaseLogApp()
                 .start(
                         "dwd_traffic_baselog",
-                        11002,
+                        11001,
                         4,
                         PropertyUtil.getStringValue("TOPIC_ODS_LOG"),
                         "Lazy"

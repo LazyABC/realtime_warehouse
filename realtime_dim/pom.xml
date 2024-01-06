@@ -18,10 +18,10 @@
 
     <dependencies>
         <!--cdc 依赖-->
-        <!-- 无需声明版本，默认取父工程中已经定义的 -->
         <dependency>
             <groupId>com.ververica</groupId>
             <artifactId>flink-connector-mysql-cdc</artifactId>
+            <version>${flink.cdc.version}</version>
         </dependency>
 
         <dependency>
