@@ -112,9 +112,9 @@ public class UserLoginWindow extends BaseDataStreamApp {
          */
         return ds
                 .map(s -> JSON.parseObject(s, UserLoginBean.class))
-                //uid不能为null ,last_page_id要么为null，要么为page
+                //uid不能为null ,last_page_id要么为null，要么为login
                 .filter(u -> StringUtils.isNotBlank(u.getUid()) &&
-                        ("page".equals(u.getLast_page_id()) || u.getLast_page_id() != null))
+                        ("login".equals(u.getLast_page_id()) || u.getLast_page_id() == null))
                 .assignTimestampsAndWatermarks(watermarkStrategy)
                 .keyBy(UserLoginBean::getUid)
                 .process(new KeyedProcessFunction<String, UserLoginBean, UserLoginBean>()

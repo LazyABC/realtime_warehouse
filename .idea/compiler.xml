@@ -9,10 +9,13 @@
         <module name="realtime-dwd-traffic-baselog" />
         <module name="realtime-dwd-trade-order-refund" />
         <module name="realtime-dwd-trade-cart-add" />
+        <module name="realtime-dws-trade-trademark-category-user-refund-window" />
+        <module name="realtime_ads" />
         <module name="realtime_common" />
         <module name="realtime-dws-traffic-source-keyword-page-view-window" />
         <module name="realtime-dws-user-user-login-window" />
         <module name="realtime-dwd-trade-order-detail" />
+        <module name="realtime-dws-trade-province-order-window" />
         <module name="realtime-dwd-interaction-comment-info" />
         <module name="realtime_dim" />
         <module name="realtime-dws-trade-cart-add-user-window" />
@@ -31,5 +34,10 @@
     <bytecodeTargetLevel>
       <module name="realtime_diw" target="1.8" />
     </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="realtime_ads" options="-parameters" />
+    </option>
   </component>
 </project>

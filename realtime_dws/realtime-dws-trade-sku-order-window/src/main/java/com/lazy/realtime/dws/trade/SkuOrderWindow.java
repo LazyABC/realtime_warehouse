@@ -31,16 +31,16 @@ public class SkuOrderWindow extends BaseSqlApp {
 
         //1.从dwd_order_detail 读取数据
         String odSql = " create table t1(" +
-            " id STRING, " +
-            " sku_id STRING ," +
-            " sku_num STRING ," +
-            " split_total_amount STRING ," +
-            " split_activity_amount STRING ," +
-            " split_coupon_amount STRING ," +
-            " create_time TIMESTAMP(0) ," +
-            "  `offset` BIGINT METADATA VIRTUAL  ," +
-            " WATERMARK FOR create_time as create_time - INTERVAL '0.001' SECOND " +
-            SqlUtil.getKafkaSourceSql(TOPIC_DWD_TRADE_ORDER_DETAIL,DWS_TRADE_SKU_ORDER_WINDOW);
+                " id STRING, " +
+                " sku_id STRING ," +
+                " sku_num STRING ," +
+                " split_total_amount STRING ," +
+                " split_activity_amount STRING ," +
+                " split_coupon_amount STRING ," +
+                " create_time TIMESTAMP(0) ," +
+                "  `offset` BIGINT METADATA VIRTUAL  , " +
+                "  WATERMARK FOR create_time as create_time - INTERVAL '0.001' SECOND " +
+                SqlUtil.getKafkaSourceSql(TOPIC_DWD_TRADE_ORDER_DETAIL,DWS_TRADE_SKU_ORDER_WINDOW);
 
         env.executeSql(odSql);
 
@@ -84,70 +84,104 @@ public class SkuOrderWindow extends BaseSqlApp {
 
         //2. 对数据按照offset进行升序排序
         String rankSql = " select " +
-            " * ," +
-            " row_number() over(partition by id order by offset ) rn " +
-            " from t1 " ;
+                " * ," +
+                " row_number() over(partition by id order by `offset` asc ) rn " +
+                " from t1 " ;
 
         env.createTemporaryView("t2",env.sqlQuery(rankSql));
+        env.createTemporaryView("t3",env.sqlQuery(" select * from t2 where rn = 1"));
 
-        //3.开窗计算
+        /*
+            3.开窗计算
+                报错: StreamPhysicalWindowAggregate doesn't support consuming update and delete changes which is produced by node Rank
+                    只要使用了排名函数，不管排名函数是否会造成数据的更新和删除这些撤回操作，都不执行TVF窗口的计算。
+
+                    从flink1.14开始，flink的TVF窗口，不支持处理排名后的数据。
+                    flink的Group window(老的窗口api)支持处理排名后的数据。
+
+                    优先推荐使用TVF窗口:   TABLE( TUMBLE|HOP XXXX )
+
+                    老的API，group window:  session窗口，滚动和滑动
+
+               解决方案：
+                        使用老的api，group window解决。
+                        TUMBLE(time_attr, interval): 开启一个滚动窗口
+                        TUMBLE_START(time_attr, interval)： 滚动窗口的起始时间
+                        TUMBLE_END(time_attr, interval)： 滚动窗口的结束时间
+                            按照窗口进行分组。
+
+         */
         String tumbleSql = " SELECT" +
-            "  window_start," +
-            "  window_end," +
-            "  sku_id, " +
-            "  TO_DATE(DATE_FORMAT(window_start,'yyyy-MM-dd')) cur_date," +
-            "  sum(cast(sku_num as INT )) sku_num, " +
-            "  sum( cast (split_activity_amount as decimal(16,2)) ) activity_reduce_amount, " +
-            "  sum( cast (split_coupon_amount as decimal(16,2)) ) coupon_reduce_amount ," +
-            "  sum( cast (split_total_amount as decimal(16,2)) ) order_amount " +
-            "  FROM TABLE(" +
-            "    TUMBLE(TABLE t2, DESCRIPTOR(create_time), INTERVAL '5' second )" +
-            "   )" +
-            "  WHERE rn = 1 " +
-            "  GROUP BY window_start, window_end , sku_id ";
+                "  window_start stt," +
+                "  window_end edt," +
+                "  sku_id, " +
+                "  TO_DATE(DATE_FORMAT(window_start,'yyyy-MM-dd')) cur_date," +
+                "  sum( cast(sku_num as INT ) ) sku_num ," +
+                "  sum( cast(split_activity_amount as decimal(16,2) ) ) activity_reduce_amount  ," +
+                "  sum( cast(split_coupon_amount as decimal(16,2)) ) coupon_reduce_amount ," +
+                "  sum( cast(split_total_amount as decimal(16,2)) ) order_amount ," +
+                "   PROCTIME() pt " +
+                "  FROM TABLE(" +
+                "    TUMBLE(TABLE t3, DESCRIPTOR(create_time), INTERVAL '5' second )" +
+                "   )" +
+                "  GROUP BY window_start, window_end , sku_id ";
+
+        String groupTumbleSql = " select " +
+                "  TUMBLE_START(create_time, INTERVAL '5' second)  stt," +
+                "  TUMBLE_END(create_time, INTERVAL '5' second)  edt," +
+                "  sku_id," +
+                "  sum( cast(sku_num as INT ) ) sku_num ," +
+                "  sum( cast(split_activity_amount as decimal(16,2) ) ) activity_reduce_amount  ," +
+                "  sum( cast(split_coupon_amount as decimal(16,2)) ) coupon_reduce_amount ," +
+                "  sum( cast(split_total_amount as decimal(16,2)) ) order_amount ," +
+                "  PROCTIME() pt " +
+                " from t3 " +
+                " group by TUMBLE(create_time, INTERVAL '5' second), sku_id";
+
+        env.createTemporaryView("t4",env.sqlQuery(groupTumbleSql));
 
         //4.关联维度 使用look-upjoin
         String skuSql = " create table sku( " +
-            "  id STRING ," +
-            "  info Row<spu_id STRING,price STRING,sku_name STRING," +
-            "   tm_id STRING, category3_id STRING > ," +
-            "  PRIMARY KEY (id) NOT ENFORCED  " +
-            SqlUtil.getHBaseSourceSql("gmall:dim_sku_info");
+                "  id STRING ," +
+                "  info Row<spu_id STRING,price STRING,sku_name STRING," +
+                "   tm_id STRING, category3_id STRING > ," +
+                "  PRIMARY KEY (id) NOT ENFORCED  " +
+                SqlUtil.getHBaseSourceSql("gmall:dim_sku_info");
 
         String spuSql = " create table spu( " +
-            "  id STRING ," +
-            "  info Row<spu_name STRING> ," +
-            "  PRIMARY KEY (id) NOT ENFORCED  " +
-            SqlUtil.getHBaseSourceSql("gmall:dim_spu_info")
-            ;
+                "  id STRING ," +
+                "  info Row<spu_name STRING> ," +
+                "  PRIMARY KEY (id) NOT ENFORCED  " +
+                SqlUtil.getHBaseSourceSql("gmall:dim_spu_info")
+                ;
 
         String tmSql = " create table tm( " +
-            "  id STRING ," +
-            "  info Row<tm_name STRING> ," +
-            "  PRIMARY KEY (id) NOT ENFORCED  " +
-            SqlUtil.getHBaseSourceSql("gmall:dim_base_trademark")
-            ;
+                "  id STRING ," +
+                "  info Row<tm_name STRING> ," +
+                "  PRIMARY KEY (id) NOT ENFORCED  " +
+                SqlUtil.getHBaseSourceSql("gmall:dim_base_trademark")
+                ;
 
         String c1Sql = " create table c1( " +
-            "  id STRING ," +
-            "  info Row<name STRING> ," +
-            "  PRIMARY KEY (id) NOT ENFORCED  " +
-            SqlUtil.getHBaseSourceSql("gmall:dim_base_category1")
-            ;
+                "  id STRING ," +
+                "  info Row<name STRING> ," +
+                "  PRIMARY KEY (id) NOT ENFORCED  " +
+                SqlUtil.getHBaseSourceSql("gmall:dim_base_category1")
+                ;
 
         String c2Sql = " create table c2( " +
-            "  id STRING ," +
-            "  info Row<name STRING,category1_id STRING> ," +
-            "  PRIMARY KEY (id) NOT ENFORCED  " +
-            SqlUtil.getHBaseSourceSql("gmall:dim_base_category2")
-            ;
+                "  id STRING ," +
+                "  info Row<name STRING,category1_id STRING> ," +
+                "  PRIMARY KEY (id) NOT ENFORCED  " +
+                SqlUtil.getHBaseSourceSql("gmall:dim_base_category2")
+                ;
 
         String c3Sql = " create table c3( " +
-            "  id STRING ," +
-            "  info Row<name STRING,category2_id STRING> ," +
-            "  PRIMARY KEY (id) NOT ENFORCED  " +
-            SqlUtil.getHBaseSourceSql("gmall:dim_base_category3")
-            ;
+                "  id STRING ," +
+                "  info Row<name STRING,category2_id STRING> ," +
+                "  PRIMARY KEY (id) NOT ENFORCED  " +
+                SqlUtil.getHBaseSourceSql("gmall:dim_base_category3")
+                ;
 
         env.executeSql(skuSql);
         env.executeSql(spuSql);
@@ -156,8 +190,64 @@ public class SkuOrderWindow extends BaseSqlApp {
         env.executeSql(c2Sql);
         env.executeSql(c3Sql);
 
+        String joinSql = " select " +
+                " `stt`                 ," +
+                "`edt`                  ," +
+                " TO_DATE(DATE_FORMAT(stt,'yyyy-MM-dd')) `cur_date`             ," +
+                " cast(tm.id as SMALLINT) `trademark_id`         ," +
+                " tm.info.tm_name `trademark_name`       ," +
+                " cast(c1.id as SMALLINT) `category1_id`         ," +
+                " c1.info.name `category1_name`       ," +
+                " cast(c2.id as SMALLINT) `category2_id`         ," +
+                " c2.info.name `category2_name`       ," +
+                " cast(c3.id as SMALLINT) `category3_id`         ," +
+                " c3.info.name `category3_name`       ," +
+                " cast(`sku_id` as INT)               ," +
+                " sku.info.sku_name `sku_name`             ," +
+                " cast(spu.id as INT) `spu_id`               ," +
+                " spu.info.spu_name `spu_name`             ," +
+                " sku_num * cast(sku.info.price as decimal(16,2)) `original_amount`      ," +
+                "`activity_reduce_amount` ," +
+                "`coupon_reduce_amount` ," +
+                "`order_amount`         " +
+                " from t4 " +
+                " left join sku FOR SYSTEM_TIME AS OF t4.pt " +
+                " ON t4.sku_id = sku.id " +
+                " left join spu FOR SYSTEM_TIME AS OF t4.pt " +
+                " ON sku.info.spu_id = spu.id " +
+                " left join c3 FOR SYSTEM_TIME AS OF t4.pt " +
+                " ON sku.info.category3_id = c3.id " +
+                " left join c2 FOR SYSTEM_TIME AS OF t4.pt " +
+                " ON c3.info.category2_id = c2.id " +
+                " left join c1 FOR SYSTEM_TIME AS OF t4.pt " +
+                " ON c2.info.category1_id = c1.id " +
+                " left join tm FOR SYSTEM_TIME AS OF t4.pt " +
+                " ON sku.info.tm_id = tm.id " ;
 
+        //5.创建sink表
+        String sinkSql = " create table t5 (" +
+                "  `stt`            TIMESTAMP,       " +
+                " `edt`                TIMESTAMP,   " +
+                " `cur_date`         DATE,     " +
+                " `trademark_id`     SMALLINT,     " +
+                " `trademark_name`     STRING,   " +
+                " `category1_id`      SMALLINT,    " +
+                " `category1_name`     STRING,   " +
+                " `category2_id`        SMALLINT,  " +
+                " `category2_name`    STRING,    " +
+                " `category3_id`      SMALLINT,    " +
+                " `category3_name`    STRING,    " +
+                " `sku_id`           INT,      " +
+                " `sku_name`         STRING,     " +
+                " `spu_id`          INT,      " +
+                " `spu_name`        STRING,      " +
+                " `original_amount`   DECIMAL(16,2),    " +
+                " `activity_reduce_amount` DECIMAL(16,2)," +
+                " `coupon_reduce_amount`  DECIMAL(16,2), " +
+                " `order_amount`          DECIMAL(16,2) "+SqlUtil.getDorisSinkSql("gmall_realtime.dws_trade_sku_order_window");
 
+        env.executeSql(sinkSql);
+        env.executeSql("insert into t5 "+ joinSql);
 
     }
 }

@@ -11,6 +11,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -38,8 +39,58 @@ import java.util.stream.Collectors;
  *         判断库是否存在
  *         构造TableName
  *         返回Admin
+ *
+ *         -------------------------
+ *         见到Future，代表这是一个异步操作。会在未来给你返回一个T
  */
 public class HBaseUtil {
+
+    //创建支持异步操作的连接
+    private static AsyncConnection asyncConnection;
+
+    static {
+        try {
+            //在方法的构造中，会读取hadoop的各种配置及hbase的各种配置
+            CompletableFuture<AsyncConnection> future = ConnectionFactory.createAsyncConnection();
+            //get()是一个阻塞的方法，等未来创建好AsyncConnection后，调用get获取
+            asyncConnection = future.get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void closeAyncConnection(){
+        if (asyncConnection != null){
+            try {
+                asyncConnection.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /*
+      Table： 只支持同步操作的表的客户端。线程不安全。每个线程只能有自己的Table。
+                    Table的创建是轻量级的，用完后自己关闭。不建议池化或缓存。
+
+      AsyncTable： 支持异步操作的表的客户端
+                    完全是线程安全的。用完无需关闭(关闭不会释放异步表所占用的资源)，只有通过关闭AsyncConnection才能真正释放资源。
+     */
+
+    public static  AsyncTable<AdvancedScanResultConsumer> getAsyncTable(String ns,String tn)  {
+        return asyncConnection.getTable(getTableName(ns, tn));
+    }
+
+
+
+
+
+    //----------------------分割上面为异步，下面为同步-------------------------------------------------------
+
+
+
+
+
     //单例。保证一个App只有一个Connection对象
     private static Connection connection;
 
