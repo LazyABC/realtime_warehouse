@@ -1,6 +1,6 @@
 package com.lazy.realtime.ads.service;
 
-import com.lazy.realtime.ads.bean.channel.TrafficUvCt;
+import com.lazy.realtime.ads.bean.traffic.ChannelSvCt;
 
 import java.util.List;
 
@@ -12,5 +12,5 @@ import java.util.List;
 public interface ChannelStatsService {
 
     //计算各渠道独立访客数
-    List<TrafficUvCt> queryTrafficUvCtByChannel(String date);
+    List<ChannelSvCt> queryTrafficUvCtByChannel(String date);
 }

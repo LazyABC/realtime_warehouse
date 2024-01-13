@@ -1,7 +1,8 @@
-package com.lazy.realtime.ads.service;
+package com.lazy.realtime.ads.service.impl;
 
-import com.lazy.realtime.ads.bean.channel.TrafficUvCt;
+import com.lazy.realtime.ads.bean.traffic.ChannelSvCt;
 import com.lazy.realtime.ads.mapper.ChannelStatsMapper;
+import com.lazy.realtime.ads.service.ChannelStatsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -16,7 +17,7 @@ import java.util.List;
  * @Details:
  */
 @Service
-public class ChannelStatsServiceImpl implements ChannelStatsService{
+public class  ChannelStatsServiceImpl implements ChannelStatsService {
 
     //用于验证传入的日期字符串是否合法。
     // 如果传入的日期字符串为空（!StringUtils.hasText(date)），则使用当前日期的格式化形式（"yyyyMMdd"）作为默认日期
@@ -32,7 +33,7 @@ public class ChannelStatsServiceImpl implements ChannelStatsService{
 
 
     @Override
-    public List<TrafficUvCt> queryTrafficUvCtByChannel(String date) {
+    public List<ChannelSvCt> queryTrafficUvCtByChannel(String date) {
             validDate(date);
         return channelStatsMapper.queryTrafficUvCtByChannel(date);
     }

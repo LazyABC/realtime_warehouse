@@ -1,10 +1,11 @@
 package com.lazy.realtime.ads.controller;
 
-import com.lazy.realtime.ads.bean.channel.TrafficUvCt;
+import com.lazy.realtime.ads.bean.traffic.ChannelSvCt;
 import com.lazy.realtime.ads.bean.format.SeriesBean;
 import com.lazy.realtime.ads.bean.response.BarResponseData;
 import com.lazy.realtime.ads.service.ChannelStatsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,8 +32,9 @@ import java.util.stream.Collectors;
  *      []:  封装List，或JSONArray
  */
 
-@RestController
-@RequestMapping("/gmall/realtime/traffic")
+//@RestController
+//@RequestMapping("/gmall/realtime/traffic")
+//@ConditionalOnProperty(name = "myapp.feature.enabled", havingValue = "false")
 public class ChannelStatsController {
 
     @Autowired
@@ -40,9 +42,9 @@ public class ChannelStatsController {
     @RequestMapping("/uvCt")
     public Object calChannelUvct(String date){
         //既包含渠道，也有对应的指标
-        List<TrafficUvCt> trafficUvCts = channelStatsService.queryTrafficUvCtByChannel(date);
-        List<String> categories = trafficUvCts.stream().map(TrafficUvCt::getCh).collect(Collectors.toList());
-        List<Long> seriesDataList = trafficUvCts.stream().map(TrafficUvCt::getUvCt).collect(Collectors.toList());
+        List<ChannelSvCt> channelUvCts = channelStatsService.queryTrafficUvCtByChannel(date);
+        List<String> categories = channelUvCts.stream().map(ChannelSvCt::getCh).collect(Collectors.toList());
+        List<Long> seriesDataList = channelUvCts.stream().map(ChannelSvCt::getSvCt).collect(Collectors.toList());
 
         return new BarResponseData(0,"",categories, Collections.singletonList(new SeriesBean("独立访客数",seriesDataList)));
 

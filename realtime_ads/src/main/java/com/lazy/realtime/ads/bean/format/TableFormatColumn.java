@@ -4,19 +4,17 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 /**
  * @Name: Lazy
- * @Date: 2024/1/10 19:07:16
- * @Details: SeriesBean代表series:[{},{}]中的单个对象
+ * @Date: 2024/1/12 09:29:48
+ * @Details:
  */
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class SeriesBean<T> {
+@NoArgsConstructor
+public class TableFormatColumn {
 
     private String name;
-    private List<T> data;
+    private String id;
 }

@@ -9,6 +9,7 @@ import com.lazy.realtime.common.util.HBaseUtil;
 import com.lazy.realtime.common.util.JDBCUtil;
 import com.lazy.realtime.common.util.PropertyUtil;
 import com.lazy.realtime.dim.function.HBaseSinkFunction;
+import com.lazy.realtime.dim.function.HBaseSinkFunction2;
 import com.lazy.realtime.dim.pojo.TableProcess;
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;
@@ -95,7 +96,7 @@ public class DimApp extends BaseDataStreamApp {
          */
 
         //6.执行写出
-        resultDs.addSink(new HBaseSinkFunction());
+        resultDs.addSink(new HBaseSinkFunction2());
         resultDs.print();
 
     }
